@@ -8,14 +8,14 @@ It uses the [webview/webview](https://github.com/webview/webview) library to cre
 
 ## Architecture
 
-- **Frontend (`ui/`):** A Single Page Application (SPA) built with React, TypeScript, Vite, and Tailwind CSS. It builds into a single HTML file for easy loading into the webview.
-- **Backend (`core/`):** A Zig application that initializes the webview window, exposes native functions to JavaScript, and handles application lifecycle.
-- **IPC:** Communication happens via `window.webview_bind` (C -> JS) and `window.webview_return` (JS -> C). TypeScript wrappers provide a type-safe API for these native calls.
+- **Frontend (`src/`):** A Single Page Application (SPA) built with React, TypeScript, Vite, and Tailwind CSS. It builds into a single HTML file (`dist/index.html`) that gets embedded into the Zig binary at compile time.
+- **Backend (`src-zig/`):** A Zig application that initializes the webview window, exposes native functions to JavaScript, and handles application lifecycle.
+- **IPC:** Communication happens via `webview_bind` (C -> JS) and `webview_return` (JS -> C). TypeScript wrappers provide a type-safe API for these native calls.
 
 ## Current Status
 
-- **Core:** Basic Zig build setup (`build.zig`) is in place with dependencies defined in `build.zig.zon`. `main.zig` currently opens a simple webview with hardcoded HTML. **It does not yet implement the full IPC handlers or load the actual UI build.**
-- **UI:** Standard Vite + React + Tailwind setup. Includes `vite-plugin-singlefile` to bundle assets for the webview.
+- **Core:** Zig build setup (`build.zig`) with dependencies in `build.zig.zon`. The build system reads `dist/index.html` and embeds it into the binary via build options. `main.zig` creates a webview window and loads the embedded HTML. **IPC handlers are not yet implemented.**
+- **UI:** Vite + React + Tailwind setup with `vite-plugin-singlefile` to bundle everything into a single HTML file. Uses React Compiler via babel plugin.
 
 ## Development Workflow
 
@@ -48,19 +48,29 @@ pnpm run build # Build single-file HTML for production/integration
 
 ```
 /
-├── CLAUDE.md              # Project guidelines and shortcuts
-├── IMPLEMENTATION_PLAN.md # detailed implementation roadmap
-├── GEMINI.md              # This context file
-├── package.json           # UI dependencies & Scripts
+├── AGENTS.md              # Project documentation (canonical source)
+├── CLAUDE.md -> AGENTS.md # Symlink for Claude Code
+├── GEMINI.md -> AGENTS.md # Symlink for Gemini
+├── README.md -> AGENTS.md # Symlink for GitHub
+├── IMPLEMENTATION_PLAN.md # Detailed implementation roadmap
+├── package.json           # UI dependencies & scripts
+├── pnpm-lock.yaml         # Lockfile
 ├── vite.config.ts         # Vite config (single-file build)
+├── tsconfig.json          # TypeScript config
+├── eslint.config.js       # ESLint config
+├── prettier.config.js     # Prettier config
+├── index.html             # Vite entry HTML
 ├── src/                   # React Frontend Source
 │   ├── main.tsx           # Entry point
-│   └── ...
-├── dist/                  # UI Build Output
+│   ├── App.tsx            # Main component
+│   └── index.css          # Global styles
+├── public/                # Static assets
+├── dist/                  # UI Build Output (single-file HTML)
 └── src-zig/               # Zig Backend
     ├── build.zig          # Build configuration
     ├── build.zig.zon      # Zig dependencies
     └── main.zig           # Application entry point
+```
 
 ## Troubleshooting
 
@@ -82,12 +92,11 @@ If the issue persists, try forcing the XWayland backend:
 ```bash
 GDK_BACKEND=x11 zig build run
 ```
-```
 
 ## Next Steps
 
 Refer to `IMPLEMENTATION_PLAN.md` for the detailed roadmap. Immediate tasks include:
 
-1.  Refactoring `core/` to add `webview.zig` wrapper and `handlers.zig`.
-2.  Implementing the mechanism to load the built `index.html` from the UI into the webview.
-3.  Generating TypeScript definitions from Zig types.
+1. Adding a Zig wrapper (`webview.zig`) for the webview C API.
+2. Implementing IPC handlers (`handlers.zig`) for native functionality.
+3. Generating TypeScript definitions from Zig types for type-safe IPC.
