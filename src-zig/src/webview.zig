@@ -85,7 +85,3 @@ pub fn respond(self: *const Self, id: [*c]const u8, status: i32, result: [*c]con
         return WebviewError.WebviewFailed;
     }
 }
-
-pub fn getWindow(self: *const Self) ?*anyopaque {
-    return c.webview_get_window(self.handle);
-}
