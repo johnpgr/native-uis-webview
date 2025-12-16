@@ -12,11 +12,6 @@ It uses the [webview/webview](https://github.com/webview/webview) library to cre
 - **Backend (`src-zig/`):** A Zig application that initializes the webview window, exposes native functions to JavaScript, and handles application lifecycle.
 - **IPC:** Communication happens via `webview_bind` (C -> JS) and `webview_return` (JS -> C). TypeScript wrappers provide a type-safe API for these native calls.
 
-## Current Status
-
-- **Core:** Zig build setup (`build.zig`) with dependencies in `build.zig.zon`. The build system reads `dist/index.html` and embeds it into the binary via build options. `main.zig` creates a webview window and loads the embedded HTML. **IPC handlers are not yet implemented.**
-- **UI:** Vite + React + Tailwind setup with `vite-plugin-singlefile` to bundle everything into a single HTML file. Uses React Compiler via babel plugin.
-
 ## Development Workflow
 
 ### Prerequisites
