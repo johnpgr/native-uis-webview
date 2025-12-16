@@ -9,7 +9,10 @@
         "lint": "eslint .",
         "preview": "vite preview",
         "format": "prettier --write .",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "zig:build": "cd src-zig && zig build",
+        "zig:run": "cd src-zig && zig build run",
+        "run:all": "pnpm run build && pnpm run zig:run"
     },
     "dependencies": {
         "@tailwindcss/vite": "^4.1.18",
