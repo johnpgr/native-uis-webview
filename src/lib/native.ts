@@ -7,8 +7,8 @@ import type { Commands } from "./types"
  * const files = await invoke("listDir", { path: "/home" });
  */
 export async function invoke<K extends keyof Commands>(
-    command: K,
-    args: Commands[K]["args"]
+  command: K,
+  args: Commands[K]["args"]
 ): Promise<Commands[K]["return"]> {
-    return window.__invoke(command, args)
+  return window.__invoke(command, args)
 }
