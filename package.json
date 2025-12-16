@@ -11,7 +11,7 @@
         "format": "prettier --write .",
         "typecheck": "tsc --noEmit",
         "zig:build": "cd src-zig && zig build",
-        "zig:run": "cd src-zig && zig build run",
+        "zig:run": "cd src-zig && WEBKIT_DISABLE_DMABUF_RENDERER=1 zig build run",
         "run:all": "pnpm run build && pnpm run zig:run"
     },
     "dependencies": {
