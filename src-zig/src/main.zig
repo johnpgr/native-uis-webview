@@ -18,7 +18,7 @@ pub fn main() !void {
     };
     defer webview.destroy();
 
-    var ctx = handlers.Context{
+    var ctx = handlers.GlobalContext{
         .webview = &webview,
         .allocator = gpa.allocator(),
     };

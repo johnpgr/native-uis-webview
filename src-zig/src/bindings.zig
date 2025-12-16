@@ -2,7 +2,7 @@ const handlers = @import("handlers.zig");
 const WebView = @import("webview.zig");
 const std = @import("std");
 
-pub fn registerAll(webview: *const WebView, ctx: *handlers.Context) !void {
+pub fn registerAll(webview: *const WebView, ctx: *handlers.GlobalContext) !void {
     try bindWrapped(webview, "readFile", handlers.readFile, ctx);
     try bindWrapped(webview, "listDir", handlers.listDir, ctx);
 }
@@ -11,15 +11,14 @@ fn bindWrapped(
     webview: *const WebView,
     name: [*:0]const u8,
     comptime handler: anytype,
-    ctx: *handlers.Context,
+    ctx: *handlers.GlobalContext,
 ) !void {
     const Wrapper = struct {
         fn callback(id: [*c]const u8, req: [*c]const u8, arg: ?*anyopaque) callconv(.c) void {
-            const context: *handlers.Context = @ptrCast(@alignCast(arg));
+            const global_ctx: *handlers.GlobalContext = @ptrCast(@alignCast(arg));
 
             // 1. Setup Arena (Request Scope)
-            // This frees ALL memory allocated during the request (args, result strings, temp)
-            var arena_impl = std.heap.ArenaAllocator.init(context.allocator);
+            var arena_impl = std.heap.ArenaAllocator.init(global_ctx.allocator);
             defer arena_impl.deinit();
             const arena = arena_impl.allocator();
 
@@ -33,32 +32,38 @@ fn bindWrapped(
                 req_slice,
                 .{},
             ) catch |err| {
-                returnError(context, arena, id, @errorName(err));
+                returnError(global_ctx, arena, id, @errorName(err));
                 return;
             };
             defer parsed.deinit();
 
-            // 3. Call Handler
-            // Signature: fn(ctx, arena, arg1, arg2...) !Result
-            const result = @call(.auto, handler, .{ context, arena } ++ parsed.value) catch |err| {
-                returnError(context, arena, id, @errorName(err));
+            // 3. Construct RequestContext
+            const req_ctx = handlers.RequestContext{
+                .global = global_ctx,
+                .arena = arena,
+            };
+
+            // 4. Call Handler
+            // Signature: fn(req_ctx, arg1, arg2...) !Result
+            const result = @call(.auto, handler, .{ req_ctx } ++ parsed.value) catch |err| {
+                returnError(global_ctx, arena, id, @errorName(err));
                 return;
             };
 
-            // 4. Serialize Result
+            // 5. Serialize Result
             const result_json = std.json.Stringify.valueAlloc(arena, result, .{}) catch {
-                returnError(context, arena, id, "SerializationError");
+                returnError(global_ctx, arena, id, "SerializationError");
                 return;
             };
 
-            // 5. Respond Success
-            context.webview.respond(id, 0, @ptrCast(result_json.ptr)) catch {};
+            // 6. Respond Success
+            global_ctx.webview.respond(id, 0, @ptrCast(result_json.ptr)) catch {};
         }
     };
     try webview.bind(name, Wrapper.callback, ctx);
 }
 
-fn returnError(ctx: *handlers.Context, arena: std.mem.Allocator, id: [*c]const u8, msg: []const u8) void {
+fn returnError(ctx: *handlers.GlobalContext, arena: std.mem.Allocator, id: [*c]const u8, msg: []const u8) void {
     const json = std.json.Stringify.valueAlloc(arena, .{ .@"error" = msg }, .{}) catch return;
     ctx.webview.respond(id, 1, @ptrCast(json.ptr)) catch {};
 }
@@ -66,11 +71,11 @@ fn returnError(ctx: *handlers.Context, arena: std.mem.Allocator, id: [*c]const u
 fn ArgsTypes(comptime func: anytype) type {
     const info = @typeInfo(@TypeOf(func));
     const params = info.@"fn".params;
-    if (params.len < 2) @compileError("Handler must accept at least (ctx, arena)");
+    if (params.len < 1) @compileError("Handler must accept at least (ctx)");
 
-    // Extract parameter types skipping the first 2 (ctx, arena)
-    var types: [params.len - 2]type = undefined;
-    for (params[2..], 0..) |param, i| {
+    // Extract parameter types skipping the first 1 (ctx)
+    var types: [params.len - 1]type = undefined;
+    for (params[1..], 0..) |param, i| {
         types[i] = param.type.?;
     }
     return std.meta.Tuple(&types);

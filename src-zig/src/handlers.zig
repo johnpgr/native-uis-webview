@@ -2,13 +2,20 @@ const std = @import("std");
 const api = @import("api.zig");
 const Webview = @import("webview.zig");
 
-pub const Context = struct {
+// Persistent application state
+pub const GlobalContext = struct {
     webview: *const Webview,
     allocator: std.mem.Allocator,
 };
 
-pub fn readFile(ctx: *Context, arena: std.mem.Allocator, path: []const u8) !struct { data: []const u8 } {
-    _ = ctx; // Unused in this handler, but required by signature
+// Per-request context
+pub const RequestContext = struct {
+    global: *GlobalContext,
+    arena: std.mem.Allocator,
+};
+
+pub fn readFile(ctx: RequestContext, path: []const u8) !struct { data: []const u8 } {
+    const arena = ctx.arena;
     
     // Read file
     const content = try std.fs.cwd().readFileAlloc(arena, path, 10 * 1024 * 1024);
@@ -21,14 +28,13 @@ pub fn readFile(ctx: *Context, arena: std.mem.Allocator, path: []const u8) !stru
     return .{ .data = base64 };
 }
 
-pub fn listDir(ctx: *Context, arena: std.mem.Allocator, path: []const u8) ![]api.FileInfo {
-    _ = ctx; // Unused
+pub fn listDir(ctx: RequestContext, path: []const u8) ![]api.FileInfo {
+    const arena = ctx.arena;
 
     var dir = try std.fs.cwd().openDir(path, .{ .iterate = true });
     defer dir.close();
 
     var files: std.ArrayListUnmanaged(api.FileInfo) = .empty;
-    // No need to defer deinit or free strings manually because 'arena' is reset after request!
 
     var iter = dir.iterate();
     while (try iter.next()) |entry| {
