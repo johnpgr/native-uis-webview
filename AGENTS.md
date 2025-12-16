@@ -35,8 +35,9 @@ The UI is located at the project root.
 
 ```bash
 pnpm install
-pnpm run dev   # Run in browser (mock native calls if needed)
-pnpm run build # Build single-file HTML for production/integration
+pnpm dev   # Run in browser (mock native calls if needed)
+pnpm build # Build single-file HTML for production/integration
+pnpm run:all # Run the html build & zig sequentially
 ```
 
 ## Project Structure
@@ -47,7 +48,6 @@ pnpm run build # Build single-file HTML for production/integration
 ├── CLAUDE.md -> AGENTS.md # Symlink for Claude Code
 ├── GEMINI.md -> AGENTS.md # Symlink for Gemini
 ├── README.md -> AGENTS.md # Symlink for GitHub
-├── IMPLEMENTATION_PLAN.md # Detailed implementation roadmap
 ├── package.json           # UI dependencies & scripts
 ├── pnpm-lock.yaml         # Lockfile
 ├── vite.config.ts         # Vite config (single-file build)
